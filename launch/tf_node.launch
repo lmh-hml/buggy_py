@@ -1,0 +1,12 @@
+<launch>
+
+    <arg name="target_pose" value="mtb_pose_py"/>
+
+    <node pkg="buggy_py" name="tf_node" type="tf_node.py" output="screen"/>
+    <node pkg="buggy_py" name="twist_calc" type="twist_calc.py" output="screen"/>
+    <node pkg="buggy_py" name="waypoints"  type="waypoint.py" output="screen">
+        <param name="target_pose" value="$(arg target_pose)"/>
+    </node>
+
+
+</launch>

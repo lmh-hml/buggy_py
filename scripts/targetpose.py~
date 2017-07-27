@@ -1,0 +1,155 @@
+#!/usr/bin/env python
+
+import rospy
+import actionlib
+from move_base_msgs.msg import *
+from geometry_msgs.msg import PoseStamped
+from actionlib_msgs.msg import GoalStatus
+from PoseAndPath import PoseAndPath
+from Target_Pose import TargetPoser, GoalState
+import Tkinter as tk
+import thread
+import threading
+
+#Publishes target poses to move_base for navigation
+
+
+class App(tk.Tk):
+
+    def __init__(self, master=None):
+        tk.Tk.__init__(self,master);
+        self.frame = tk.Frame(self);
+        self.frame.grid();
+        self.buttons = {};
+        self.target_pose_index = 0;
+        self.protocol("WM_DELETE_WINDOW",self.quit);
+
+    def addButton(self, name, callback=None):
+        button = tk.Button(self.frame,text=name, command=callback);
+        button.grid();
+        self.buttons[name] = button;
+
+    def printButtons(self):
+        print self.buttons;
+
+    def quit(self):
+        rospy.signal_shutdown("App closed");
+
+
+class PathFollower:
+
+    def __init__(self):
+        self.tp = TargetPoser("move_base");
+        self.pap = PoseAndPath("waypoint","map","base_link");
+        self.state = GoalState(num=-1,msg="");
+        self.target = 0;
+        self.current = -1;
+        self.topic_name = "";
+
+    def record_path(self,target_pose_topic):
+        rospy.loginfo( "Subscribing to '%s'"%( target_pose_topic ) );
+        self.sub = rospy.Subscriber(target_pose_topic,PoseStamped,pathfollower.pap.poseCB);
+        self.topic_name = target_pose_topic;
+
+    def stop_recording(self):
+        if self.topic_name != "":
+            rospy.loginfo("Unregistering from '%s'"%self.topic_name)
+            self.sub.unregister();
+
+    def report_path(self):
+        path_size = len(self.pap.path.poses);
+        print "Path size: %d"%(path_size);
+        return path_size;
+
+    def reportState(self):
+        self.state = self.tp.getState();
+        print "State: %d,  %s"%(self.state.num,self.state.msg);
+
+    def follow_path(self):
+        size = self.report_path();
+        self.reportState();
+        if size <= 0:
+            rospy.logerr("No poses in path!");
+        else:
+            while self.current != self.target:
+                rospy.loginfo("Going to Goal %d of %d"%(self.target, size));
+                pose = self.pap.getPoseStamped(self.target);
+                self.tp.send_pose_goal(pose);
+                while self.state.num not in [2,3]:
+                    pass
+                self.reportState();
+                if self.state.num == 3:
+                    self.current = self.target;
+                    self.target +=1;
+                    if self.target >= size:
+                        print "Finished";
+   
+                
+            
+
+
+
+if __name__ == '__main__':
+
+    app = App();
+    rospy.init_node("waypoint");
+    pathfollower = PathFollower();
+    target_pose_topic = rospy.get_param("~target_pose","target_pose");
+
+
+    def rec():
+        print "rec";
+        pathfollower.record_path("target_pose");
+        app.buttons["navigate"].config(state="disabled");
+        app.buttons["record"].config(state="disabled");
+
+    def stop():
+        print "Stop";
+        pathfollower.stop_recording();
+        app.buttons["navigate"].config(state="normal");
+        app.buttons["record"].config(state="normal");
+
+    def cancel():         #cancel current goal, and keep current goal the same
+        print "Cancel";
+        pathfollower.tp.cancel_goal();
+        app.buttons["navigate"].config(state="normal");
+        app.buttons["record"].config(state="normal");
+        app.buttons["stop"].config(state="normal");
+
+
+    def skip():           #cancel current goal, but forward current goal by one
+        print "Skipping";
+        pathfollower.tp.cancel_goal();
+        pathfollower.target+=1;
+        app.buttons["navigate"].config(state="normal");
+        app.buttons["record"].config(state="normal");
+
+    def nav():
+        print "NAVIGATING";
+        app.buttons["navigate"].config(state="disabled");
+        app.buttons["record"].config(state="disabled");
+        app.buttons["stop"].config(state="disabled");
+        pathfollower.follow_path();
+
+    def none():
+        print "Cancel All goals";
+        pathfollower.tp.cancel_goal(all_goals=True);
+        app.buttons["navigate"].config(state="normal");
+        app.buttons["record"].config(state="normal");
+
+    def report():
+        print "Report";
+        pathfollower.report_path();
+        pathfollower.reportState();
+        #threads = threading.activeCount();
+        print "Target:%d"%(pathfollower.target);
+
+    states = [ ("record",rec) , ("stop", stop),("navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",none),("Report",report) ];
+    for i in range(len(states)):
+        app.addButton(states[i][0], states[i][1]);
+
+    while not rospy.is_shutdown():
+        app.update();
+
+    app.destroy();
+    print "Closing..."
