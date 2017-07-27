@@ -10,6 +10,7 @@ if __name__ == '__main__':
     ppose = PoseStamped();
     x =0.0;
     y= 0.0;
+    az= 0.0;
 
 
     while not rospy.is_shutdown():
