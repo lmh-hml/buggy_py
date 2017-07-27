@@ -20,9 +20,12 @@ class NavMode(Enum):
     RECORDING=1
     NAVIGATING=2
 
-
-
 class App(tk.Tk):
+
+    states = [ "Record" ,"Stop",
+               "Navigate","Skip","Cancel","Cancel All",
+               "Clear","Pop","Report"
+             ];
 
     class LogMode(Enum):
         NORMAL="normal"
@@ -47,8 +50,16 @@ class App(tk.Tk):
         tk.Tk.__init__(self,master);
         self.frame = tk.Frame(self);
         self.buttons = {};
-        self.text = tk.Text(self,height=20,width = 90, bg="black",fg="white");
+        self.texts = {};
+
+        self.status_text = tk.Text(self,height=20,width = 50, bg="black",fg="grey");
+        self.status_text.pack(side=tk.RIGHT, fill=tk.BOTH);
+        self.texts["status_text"] = self.status_text;
+
+        self.text = tk.Text(self,height=20,width = 50, bg="black",fg="white");
         self.text.pack(side=tk.RIGHT, fill=tk.BOTH);
+        self.texts["text"] = self.text;
+
         self.frame.pack(side=tk.LEFT,fill=tk.Y);
         self.scroll = tk.Scrollbar(self);
         self.scroll.pack(side=tk.RIGHT, fill=tk.Y);
@@ -59,9 +70,8 @@ class App(tk.Tk):
         self.text.tag_configure("success",foreground="green");
         self.text.tag_configure("processing",foreground="yellow");
         self.text.tag_configure("warn",foreground="orange");
-    #    sys.stdout = self.stdoutRedirect(self);
-    #    sys.stderr = self.stderrRedirect(self);
-
+        #sys.stdout = self.stdoutRedirect(self);
+        #sys.stderr = self.stderrRedirect(self);
 
     def addButton(self, name, callback=None):
         button = tk.Button(self.frame,text=name, command=callback);
@@ -71,13 +81,14 @@ class App(tk.Tk):
     def printButtons(self):
         app.log( self.buttons);
 
-    def log_mode(self, text, logMode,src="App"):
+    def log_mode(self, text, logMode,src="App", which="text"):
+        output = self.texts[which];
         if not isinstance(text, basestring):
             to_write = src+" : " + str(text)+"\n";
-            self.text.insert(tk.END, to_write,logMode.value);
+            output.insert(tk.END, to_write,logMode.value);
         else:
-            self.text.insert(tk.END, src+" : " +text+'\n',logMode.value);
-        self.text.see(tk.END);
+            output.insert(tk.END, src+" : " +text+'\n',logMode.value);
+        output.see(tk.END);
 
     def log(self, text):
         self.log_mode(text,self.LogMode.NORMAL);
@@ -95,25 +106,30 @@ class App(tk.Tk):
         self.log_mode(text,self.LogMode.WARN);
 
     def setMode(self, mode):
-
-        if mode ==NavMode.IDLE:
+        self.mode = mode;
+        if mode == NavMode.IDLE:
             for button in self.buttons:
-                app.buttons[button].config(state="normal");
+                self.buttons[button].config(state="normal");
+            self.buttons["Skip"].config(state="disabled");
+            self.buttons["Cancel"].config(state="disabled");
+            self.buttons["Cancel All"].config(state="disabled");
 
         elif mode == NavMode.RECORDING:
-            app.buttons["Navigate"].config( state="disabled" );
-            app.buttons["Record"].config(state="disabled");
-            app.buttons["Cancel"].config(state="disabled");
-            app.buttons["Cancel All"].config(state="disabled");
-            app.buttons["Skip"].config(state="disabled");
-
+            self.buttons["Navigate"].config( state="disabled" );
+            self.buttons["Record"].config(state="disabled");
+            self.buttons["Cancel"].config(state="disabled");
+            self.buttons["Cancel All"].config(state="disabled");
+            self.buttons["Skip"].config(state="disabled");
 
         elif mode == NavMode.NAVIGATING:
-            app.buttons["Navigate"].config(state="disabled");
-            app.buttons["Record"].config(state="disabled");
-            app.buttons["Stop"].config(state="disabled");
-            app.buttons["Clear"].config(state="disabled");
-            app.buttons["Pop"].config(state="disabled");
+            self.buttons["Navigate"].config(state="disabled");
+            self.buttons["Record"].config(state="disabled");
+            self.buttons["Stop"].config(state="disabled");
+            self.buttons["Clear"].config(state="disabled");
+            self.buttons["Pop"].config(state="disabled");
+            self.buttons["Skip"].config(state="normal");
+            self.buttons["Cancel"].config(state="normal");
+            self.buttons["Cancel All"].config(state="normal");
 
     def quit(self):
         rospy.signal_shutdown("App closed");
@@ -147,8 +163,15 @@ class PathFollower:
         path_size = self.pap.getSize();
         return path_size;
 
-    def report_state(self):
+    def update_state(self):
         self.state = self.tp.getState();
+
+    def report_state(self):
+        text = "Status: %d"%self.state.num;
+        if self.state.msg !="":
+            text += "Msg: %s"%self.state.msg;
+        return text;
+
 
     def follow_path_thread(self):
         try:
@@ -160,7 +183,7 @@ class PathFollower:
             print "State: %d,  %s"%(self.state.num,self.state.msg);
         except Exception as e:
             print e.message;
-            print "FINISHING"
+        print "FINISHING"
 
     def follow_path(self):
         size = self.report_path();
@@ -207,7 +230,7 @@ if __name__ == '__main__':
         pathfollower.record_path("target_pose");
 
     def stop():
-        app.warn("STOP!")
+        app.warn("STOP RECORDING!")
         app.setMode(NavMode.IDLE);
         pathfollower.mode = NavMode.IDLE;
         pathfollower.stop_recording();
@@ -259,15 +282,25 @@ if __name__ == '__main__':
             rospy.logerr(e.message);
             app.error(e.message);
 
-
-
     states = [ ("Record",rec) , ("Stop", stop),("Navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",reset),("Clear",clearPath),("Pop",popGoal),("Report",report) ];
     for i in range(len(states)):
         app.addButton(states[i][0], states[i][1]);
+    app.setMode(NavMode.IDLE);
 
+    last = rospy.Time.now();
     while not rospy.is_shutdown():
+        now = rospy.Time.now();
+        elapsed = now-last;
         if pathfollower.mode == NavMode.RECORDING:
             pathfollower.pap.publish();
+
+        if elapsed.to_sec() >= 1.0:
+            app.log_mode("Path size: %d"%(pathfollower.report_path()), logMode=app.LogMode.WARN,which="status_text" );
+            app.log_mode(pathfollower.report_state(),logMode=app.LogMode.WARN,which="status_text" );
+            app.log_mode("Target:%d"%(pathfollower.target), logMode=app.LogMode.WARN,which="status_text" );
+            app.log_mode("", src="",logMode=app.LogMode.WARN,which="status_text" );
+            last = now;
+
         app.update();
 
     print "Closing...";

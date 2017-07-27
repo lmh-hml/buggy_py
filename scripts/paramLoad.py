@@ -23,7 +23,7 @@ def printList( a_list ):
 
 if __name__ == '__main__':
     try:
-        param_list =  rosparam.load_file("mtb_path.txt");
+        param_list =  rosparam.load_file("/home/buggy/catkin_ws/src/buggy_py/txt/mtb_path.txt");
         param_dictionary = param_list[0][0];
         param_namespace = param_list[0][1];
         param_keys = param_dictionary.keys();
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             else:
                 print value;
                 pass;
-            print '\n'
+            print '\n'  
 
 
     #    print str(string);

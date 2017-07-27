@@ -5,6 +5,7 @@ from move_base_msgs.msg import *
 from geometry_msgs.msg import PoseStamped
 from actionlib_msgs.msg import GoalStatus
 from collections import namedtuple;
+import exceptions
 
 GoalState = namedtuple("GoalState",'num, msg');
 
@@ -14,7 +15,7 @@ class TargetPoser:
         self.movebase = actionlib.SimpleActionClient(server_name,MoveBaseAction);
         self.poseStamped = PoseStamped();
         self.state   = GoalState(num=-1 ,msg="");
-        self.wait_for_server();
+        self.connected = self.wait_for_server();
 
     def wait_for_server(self):
         print "Wait for server..."
@@ -23,6 +24,7 @@ class TargetPoser:
             rospy.loginfo("Server connected!");
         else:
             rospy.logerr("Unable to connect to server")
+        return connected;
 
     def getState(self):
         """Gets the status and text for the current goal.
@@ -45,7 +47,11 @@ class TargetPoser:
         print str(res);
 
     def send_pose_goal(self,poseStamped,whenDone=None,whenActive=None,whenFeedback=None):
-        #print "sending goal: %s"%(str(poseStamped));
+        if not self.connected:
+            self.connected = self.wait_for_server();
+            if not self.connected:
+                return;
+
         if whenDone == None:
             whenDone = self.doneCB
         if whenFeedback == None:
