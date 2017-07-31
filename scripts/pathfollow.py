@@ -57,13 +57,13 @@ class PathFollower:
             text += ", Msg: %s"%self.state.msg;
         return text;
 
-    def follow_path_thread(self):
+    def follow_path_thread(self,size):
         #lock = threading.Lock();
         #lock.acquire();
         running = True;
         try:
             while running:
-                rospy.loginfo("Going to Goal %d"%(self.target));
+                rospy.loginfo("Going to Goal %d of %d"%(self.target,size));
                 pose = self.pap.getPoseStamped(self.target);
                 self.tp.send_pose_goal(pose);
                 self.tp.movebase.wait_for_result();
@@ -71,6 +71,13 @@ class PathFollower:
                 textQ.put("State: %d, msg: %s"%(self.state.num,self.state.msg));
                 if self.state.num != actionlib_msgs.msg.GoalStatus.SUCCEEDED:
                     running = False;
+                else:
+                    self.target+=1;
+                    if self.target>=size:
+                        running=False;
+                        textQ.put("Path finished!!!!")
+                        self.target = 0;
+
         except Exception as e:
             print e.message;
         textQ.put("THREAD EXITS");
@@ -83,7 +90,7 @@ class PathFollower:
         else:
             print "Thread!"
             try:
-                t= threading.Thread(target=self.follow_path_thread);
+                t= threading.Thread(target=self.follow_path_thread, args=(size,));
                 t.start();
             except Exception as e:
                 self.error(e.message);
@@ -156,7 +163,7 @@ if __name__ == '__main__':
         textQ.put("RECORDING")
         setMode(app, pathfollower,NavMode.RECORDING);
         pathfollower.mode = NavMode.RECORDING;
-        pathfollower.record_path("target_pose");
+        pathfollower.record_path(target_pose_topic);
         pass;
 
     def stop():
@@ -190,6 +197,7 @@ if __name__ == '__main__':
         textQ.put("RESET")
         setMode(app,pathfollower,NavMode.IDLE);
         pathfollower.tp.cancel_goal(all_goals=True);
+        self.target = 0;
         pass
 
     def report():
