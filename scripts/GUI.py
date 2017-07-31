@@ -41,20 +41,12 @@ class GUI(tk.Tk):
         self.GridW = 0;
         self.GridH = 0
         self.output = None
-        self.default_out = "Text"
+        self.default_out = "Info"
         self.text = self.addText(self.default_out,50,20);
         self.protocol("WM_DELETE_WINDOW",self.quit);
-        self.text.tag_configure("normal",foreground="white");
-        self.text.tag_configure("error",foreground="red");
-        self.text.tag_configure("success",foreground="green");
-        self.text.tag_configure("processing",foreground="yellow");
-        self.text.tag_configure("warn",foreground="orange");
 
         self.running = True;
-        #sys.stdout = self.stdoutRedirect(self);
-        #sys.stderr = self.stderrRedirect(self);
         self.frame.pack(side=tk.LEFT);
-
 
     def addButton(self, name, callback=None):
         button = tk.Button(self.frame,text=name, command=callback);
@@ -69,12 +61,19 @@ class GUI(tk.Tk):
         """
         frame = tk.Frame(self);
         self.frames[name]=frame;
-        frame.pack(side=side);
+        frame.pack(side=side,expand=True);
         label = tk.Label(frame,text=name,anchor=tk.NW);
         label.pack(side=tk.TOP)
         text = tk.Text(frame, height=h,width=w, bg=bgcolor, fg=fgcolor);
         text.pack(side=tk.LEFT, expand=True);
         self.texts[name] = text;
+
+        text.tag_configure("normal",foreground="white");
+        text.tag_configure("error",foreground="red");
+        text.tag_configure("success",foreground="green");
+        text.tag_configure("processing",foreground="yellow");
+        text.tag_configure("warn",foreground="orange");
+
         if scroll:
             scroll = tk.Scrollbar(frame)
             scroll.pack(side=tk.RIGHT,fill=tk.Y)
@@ -111,12 +110,12 @@ class GUI(tk.Tk):
     def warn(self, text ):
         self.log_mode(text,self.LogMode.WARN);
 
-    def logFromQueue(self, queue, mode = LogMode.NORMAL, output=""):
+    def logFromQueue(self, queue, mode = LogMode.NORMAL, output="", src="App"):
         """Gets all elements from queue and logs it with mode onto output"""
         self.setOutput(output);
         while not queue.empty():
             txt = queue.get()
-            self.log_mode(txt,mode,output)
+            self.log_mode(text=txt, logMode = mode, src=src)
             queue.task_done();
 
     def quit(self):
@@ -141,11 +140,14 @@ if __name__ == '__main__':
     import threading;
     gui = GUI();
     q1 = Queue.Queue();
-    q2 = Queue.Queue();
+    info = Queue.Queue();
+    error = Queue.Queue();
+    warn  = Queue.Queue();
+    success = Queue.Queue();
 
     oldout = sys.stdout;
-    sys.stdout = PrintQueue(q1);
-    sys.stderr = PrintQueue(q2);
+    sys.stdout = PrintQueue(info);
+    sys.stderr = PrintQueue(error);
 
     def sayhello():
         with threading.Lock():
@@ -154,7 +156,7 @@ if __name__ == '__main__':
 
     def toggle():
         with threading.Lock():
-            q2.put("Toggle")
+            q1.put("Toggle")
             t = threading.Thread(target=threaded);
             t.start();
 
@@ -163,9 +165,9 @@ if __name__ == '__main__':
             for i in range(0,100,1):
                 if gui.running == False:
                     break;
-                q2.put("ggdg")
-                rospy.loginfo("ddj")
+                rospy.loginfo("ddj%d"%i)
                 rospy.logerr("Hello")
+                rospy.Rate(3.0).sleep();
 
     gui.addButton("hello",sayhello)
     gui.addButton("bye",toggle)
@@ -174,9 +176,9 @@ if __name__ == '__main__':
     i=0;
     while gui.running:
         gui.update();
-        gui.logFromQueue(q2,output="Debug")
-        gui.logFromQueue(q1,mode = GUI.LogMode.WARN)
-
+        gui.logFromQueue(error,mode = GUI.LogMode.ERROR)
+        gui.logFromQueue(info,output="Debug")
+        gui.logFromQueue(q1,output="Debug")
 
     sys.stdout = oldout
     gui.destroy();
