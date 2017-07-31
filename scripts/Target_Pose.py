@@ -33,7 +33,9 @@ class TargetPoser:
            msg: the goal status text. Can be empty, useful for aborts.
         """
         state_num = self.movebase.get_state();
-        state_msg = self.movebase.get_goal_status_text();
+        state_msg = ""
+        if state_num != 9:
+            state_msg = self.movebase.get_goal_status_text();
         goal_state = GoalState(num = state_num, msg=state_msg)
         return goal_state;
 
@@ -42,9 +44,7 @@ class TargetPoser:
 
     def doneCB(self,state,res):
         self.state = GoalState(num=state,msg=self.movebase.get_goal_status_text());
-        res = self.movebase.get_result();
         print "Goal Callback!! state: %d,  %s"%(self.state.num,self.state.msg);
-        print str(res);
 
     def send_pose_goal(self,poseStamped,whenDone=None,whenActive=None,whenFeedback=None):
         if not self.connected:
@@ -56,7 +56,7 @@ class TargetPoser:
             whenDone = self.doneCB
         if whenFeedback == None:
             whenFeedback = self.feedbackCB;
-            
+
         mbgoal = MoveBaseActionGoal();
         mbgoal.goal.target_pose = poseStamped;
         self.movebase.send_goal(mbgoal.goal, done_cb=whenDone,active_cb=whenActive,feedback_cb=whenFeedback);

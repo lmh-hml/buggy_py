@@ -6,10 +6,6 @@
       <arg name="use_rviz" value="$(arg run_rviz)"/>
     </include>
 
-    <node pkg="buggy_py" type="targetpose.py" name="targetpose" required="true"/>
-
-    <node pkg="buggy_py" type="recordpath.py" name="recordpath">
-        <param name = "target_pose" value="target_pose"/>
-    </node>
+    <node pkg="buggy_py" type="pathfollow.py" name="targetpose" required="true"/>
 
 </launch>
