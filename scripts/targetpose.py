@@ -291,6 +291,7 @@ if __name__ == '__main__':
     app.setMode(NavMode.IDLE);
 
     last = rospy.Time.now();
+    
     while not rospy.is_shutdown():
         now = rospy.Time.now();
         elapsed = now-last;
