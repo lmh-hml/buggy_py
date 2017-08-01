@@ -58,8 +58,6 @@ class PathFollower:
         return text;
 
     def follow_path_thread(self,size):
-        #lock = threading.Lock();
-        #lock.acquire();
         running = True;
         try:
             while running:
@@ -69,6 +67,7 @@ class PathFollower:
                 self.tp.movebase.wait_for_result();
                 self.update_state();
                 textQ.put("State: %d, msg: %s"%(self.state.num,self.state.msg));
+
                 if self.state.num != actionlib_msgs.msg.GoalStatus.SUCCEEDED:
                     running = False;
                 else:
@@ -81,7 +80,6 @@ class PathFollower:
         except Exception as e:
             print e.message;
         textQ.put("THREAD EXITS");
-        #lock.release();
 
     def follow_path(self):
         size = self.report_path_size();
@@ -133,7 +131,7 @@ def setMode(gui, pathfollower, mode):
     elif mode == NavMode.NAVIGATING:
         gui.buttons["Navigate"].config(state="disabled");
         gui.buttons["Record"].config(state="disabled");
-        gui.buttons["Stop"].config(state="disabled");
+        gui.buttons["Stop Rec"].config(state="disabled");
         gui.buttons["Clear"].config(state="disabled");
         gui.buttons["Pop"].config(state="disabled");
         gui.buttons["Skip"].config(state="normal");
@@ -141,23 +139,37 @@ def setMode(gui, pathfollower, mode):
         gui.buttons["Cancel All"].config(state="normal");
 
 
-textQ  = Queue();
-stateQ = Queue();
-infoQ = Queue();
-errorQ = Queue();
+textQ  = Queue(); #for app printing
+stateQ = Queue(); #for state reporting
+infoQ = Queue();  #for ros log info
+errorQ = Queue(); #for ros log error
 
 if __name__ == '__main__':
 
     app =GUI();
-    rospy.init_node("pathfollower");
+    rospy.init_node("nav_gui");
     pathfollower = PathFollower();
     target_pose_topic = rospy.get_param("~target_pose","target_pose");
 
     sys.stdout = PrintQueue(infoQ);
     sys.stderr = PrintQueue(errorQ);
 
-    app.addText("State",50,20, side = tk.BOTTOM);
+    app.addText("State",70,20, side = tk.BOTTOM);
     app.setOutput("State")
+
+    intro = """
+INSTRUCTIONS:
+Record: Gui subsribes to topic to record waypoints for path
+Stop Rec  : Stop recording.
+Navigate: begin auto-navigation
+Cancel: cancel current goal
+Skip:   cancel current goal and increase target by 1
+Cancel all: cancel all goals and reset target to 0
+Pop: removes latest waypoints
+Clear: removes all waypoints
+Report: Prints actionlib goal status, number of waypoints and current target, etc.
+    """
+    textQ.put(intro);
 
     def rec():
         textQ.put("RECORDING")
@@ -201,6 +213,7 @@ if __name__ == '__main__':
         pass
 
     def report():
+        textQ.put("Report");
         pathfollower.update_state()
         s = pathfollower.report_state();
         n = pathfollower.report_path_size();
@@ -228,7 +241,7 @@ if __name__ == '__main__':
         pass
 
 
-    states = [ ("Record",rec) , ("Stop", stop),("Navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",reset),("Clear",clearPath),("Pop",popGoal),("Report",report) ];
+    states = [ ("Record",rec) , ("Stop Rec", stop),("Navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",reset),("Clear",clearPath),("Pop",popGoal),("Report",report) ];
 
     for i in range(len(states)):
         app.addButton(states[i][0], states[i][1]);
@@ -242,6 +255,7 @@ if __name__ == '__main__':
             if pathfollower.mode == NavMode.RECORDING:
                 pathfollower.pap.publish();
 
+            #print logs from queues onto gui textboxes
             app.logFromQueue(textQ,output="State",mode =GUI.LogMode.WARN);
             app.logFromQueue(stateQ,output="State", mode = GUI.LogMode.PROCESSING);
             app.logFromQueue(infoQ,output="Info",src="ROS");

@@ -42,7 +42,7 @@ class GUI(tk.Tk):
         self.GridH = 0
         self.output = None
         self.default_out = "Info"
-        self.text = self.addText(self.default_out,50,20);
+        self.text = self.addText(self.default_out,70,20);
         self.protocol("WM_DELETE_WINDOW",self.quit);
 
         self.running = True;
