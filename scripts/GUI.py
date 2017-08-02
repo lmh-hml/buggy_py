@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import Tkinter as tk
+import tkFileDialog as tkfile
 import threading
 from enum import Enum
 import exceptions
 import sys
 import time
 import Queue
-import rospy
 
 class GUI(tk.Tk):
 
@@ -50,7 +50,7 @@ class GUI(tk.Tk):
 
     def addButton(self, name, callback=None):
         button = tk.Button(self.frame,text=name, command=callback);
-        button.pack();
+        button.grid();
         self.buttons[name] = button;
 
     def printButtons(self):
@@ -60,12 +60,9 @@ class GUI(tk.Tk):
         """adds a textbox to this gui.
         """
         frame = tk.Frame(self);
-        self.frames[name]=frame;
-        frame.pack(side=side,expand=True);
         label = tk.Label(frame,text=name,anchor=tk.NW);
-        label.pack(side=tk.TOP)
         text = tk.Text(frame, height=h,width=w, bg=bgcolor, fg=fgcolor);
-        text.pack(side=tk.LEFT, expand=True);
+        self.frames[name]=frame;
         self.texts[name] = text;
 
         text.tag_configure("normal",foreground="white");
@@ -73,6 +70,10 @@ class GUI(tk.Tk):
         text.tag_configure("success",foreground="green");
         text.tag_configure("processing",foreground="yellow");
         text.tag_configure("warn",foreground="orange");
+
+        frame.pack(side=side,expand=True);
+        label.pack(side=tk.TOP)
+        text.pack(side=tk.LEFT, expand=True);
 
         if scroll:
             scroll = tk.Scrollbar(frame)
@@ -132,10 +133,7 @@ class PrintQueue():
         self.q.put(text);
 
 
-
 if __name__ == '__main__':
-
-    rospy.init_node("wkkw")
 
     import threading;
     gui = GUI();
@@ -165,12 +163,11 @@ if __name__ == '__main__':
             for i in range(0,100,1):
                 if gui.running == False:
                     break;
-                rospy.loginfo("ddj%d"%i)
-                rospy.logerr("Hello")
-                rospy.Rate(3.0).sleep();
+
 
     gui.addButton("hello",sayhello)
     gui.addButton("bye",toggle)
+    gui.addButton("file",fileopen);
     gui.addText("Debug",50,20);
 
     i=0;

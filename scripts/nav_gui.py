@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import rospy
 import actionlib
 from move_base_msgs.msg import *
@@ -8,11 +7,13 @@ from actionlib_msgs.msg import GoalStatus
 from PoseAndPath import PoseAndPath, EmptyPoseAndPathError
 from Target_Pose import TargetPoser, GoalState
 from GUI import GUI, PrintQueue,tk
+import tkFileDialog as tkfile
 from Queue import Queue
 import threading
 from enum import Enum
 import exceptions
 import sys
+from paramLoad import load_poses_from_file
 
 #Publishes target poses to move_base for navigation
 
@@ -154,7 +155,7 @@ if __name__ == '__main__':
     sys.stdout = PrintQueue(infoQ);
     sys.stderr = PrintQueue(errorQ);
 
-    app.addText("State",70,20, side = tk.BOTTOM);
+    app.addText("State",70,20);
     app.setOutput("State")
 
     intro = """
@@ -240,8 +241,25 @@ Report: Prints actionlib goal status, number of waypoints and current target, et
             app.error(e.message);
         pass
 
+    def save_path():
+        saved_file = tkfile.asksaveasfilename();
+        textQ.put(" SAVING PATH TO %s"%saved_file);
+        pathfollower.pap.write_path_simple(saved_file);
+        pass
 
-    states = [ ("Record",rec) , ("Stop Rec", stop),("Navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",reset),("Clear",clearPath),("Pop",popGoal),("Report",report) ];
+    def load_file():
+        load_file = tkfile.askopenfilename();
+        textQ.put("Loading from file %s"%load_file);
+        res = load_poses_from_file(load_file,pathfollower.pap);
+        if not res:
+            textQ.put("UNABLE TO LOAD FILE")
+        pass
+
+    states = [ ("Record",rec) , ("Stop Rec", stop),
+    ("Navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",reset),
+    ("Clear",clearPath),("Pop",popGoal),
+    ("Save",save_path),("Load", load_file),
+    ("Report",report) ];
 
     for i in range(len(states)):
         app.addButton(states[i][0], states[i][1]);

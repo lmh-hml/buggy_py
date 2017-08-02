@@ -63,7 +63,7 @@ if __name__ == '__main__':
             rospy.logerr(ex.message);
             continue
 
-    mtb.write_path_to_file("/home/buggy/catkin_ws/src/buggy_py/txt/mtb_path.txt");
-    otb.write_path_to_file("/home/buggy/catkin_ws/src/buggy_py/txt/otb_path.txt");
+    mtb.write_path_simple("/home/buggy/catkin_ws/src/buggy_py/txt/mtb_path.txt");
+    otb.write_path_simple("/home/buggy/catkin_ws/src/buggy_py/txt/otb_path.txt");
 
     print "NODE END!"

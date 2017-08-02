@@ -35,9 +35,9 @@ class PoseAndPath:
         self.pose = PoseStamped();
         self.path = Path();
         self.pose_array = PoseArray();
-        self.pose_pub = rospy.Publisher( name+"_pose_py",PoseStamped,queue_size=10);
-        self.path_pub = rospy.Publisher(name+"_path_py",Path,queue_size=10);
-        self.poseArray_pub = rospy.Publisher(name+"_poseArray_py",PoseArray,queue_size=10);
+        self.pose_pub = rospy.Publisher( name+"_pose",PoseStamped,queue_size=10);
+        self.path_pub = rospy.Publisher(name+"_path",Path,queue_size=10);
+        self.poseArray_pub = rospy.Publisher(name+"_poseArray",PoseArray,queue_size=10);
         self.header.frame_id = src_frame;
         self.path.header = self.header;
         self.pose_array.header = self.header;
@@ -60,6 +60,10 @@ class PoseAndPath:
     def update_path_array(self):
         self.pose_array.poses.append(self.pose.pose);
         self.path.poses.append(self.pose);
+
+    def append_path_array(self,pose):
+        self.pose_array.poses.append(pose.pose);
+        self.path.poses.append(pose);
 
     def publish(self):
         self.pose_pub.publish(self.pose);
@@ -89,3 +93,17 @@ class PoseAndPath:
         pathFile.writelines("pose_no: "+str( len(self.path.poses) ) + '\n' );
         pathFile.writelines("path : "+str(self.path));
         pathFile.close();
+
+    def write_path_simple(self,filepath):
+        with open(filepath,'w') as pathfile:
+            pathfile.writelines( "date: " + time.ctime() +'\n');
+            length = len(self.path.poses);
+            pathfile.writelines("how_many: "+str( length ) + '\n' );
+            pathfile.writelines("src_frame: "+self.src + '\n' );
+            pathfile.writelines("\n\n" );
+            pathfile.write("Poses:\n");
+            for i in range(length):
+                pose = self.path.poses[i];
+                pathfile.write('  -\n');
+                pathfile.write("    position: [%f,%f,%f]\n"%(pose.pose.position.x,pose.pose.position.y,pose.pose.position.z) );
+                pathfile.write("    orientation: [%f,%f,%f,%f]\n"%(pose.pose.orientation.x,pose.pose.orientation.y,pose.pose.orientation.z,pose.pose.orientation.w) );
