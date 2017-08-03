@@ -10,16 +10,22 @@ from nav_msgs.msg import Path
 import types
 
 def load_poses_from_file(filename, poseAndPath):
-    """Loads poses from a file into a PoseAndPath object."""
+    """Loads poses from a file into a PoseAndPath object.
+    When loaded by rosparam.load,the output variable 'loaded' should be arranged as so:
+    [ (  { 'date':'...' , 'src_frame': '...', 'Poses' : [...] , 'how_many': ... }  ) ]
+
+    """
     try:
         loaded = rosparam.load_file(filename);
+        print loaded
         print loaded[0][0].keys()
         poses = loaded[0][0]["Poses"];
-        if poses.__class__ == types.NoneType:
+        num_poses = len(poses)
+        if num_poses == 0:
             print "POSES HAVE NO POSE IN IT"
             return False
-        num_poses = len(poses)
-        print num_poses
+        else:
+            print "Loading %d poses..."%num_poses
         for i in range(num_poses):
             pose = PoseStamped();
             header = Header();
@@ -32,11 +38,9 @@ def load_poses_from_file(filename, poseAndPath):
         return False
 
 
-
-
 if __name__ == '__main__':
 
-    rospy.init_node("Record");
+    rospy.init_node("load_path");
     file_dir = rospy.get_param("file_dir","/home/buggy/catkin_ws/src/buggy_py/txt/");
     filename = rospy.get_param("~file", "waypoint_path2.txt");
     pap = PoseAndPath("record","map","base_link");

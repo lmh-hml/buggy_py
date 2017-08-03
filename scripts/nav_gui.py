@@ -13,7 +13,7 @@ import threading
 from enum import Enum
 import exceptions
 import sys
-from paramLoad import load_poses_from_file
+from load_path import load_poses_from_file
 
 #Publishes target poses to move_base for navigation
 
@@ -151,6 +151,7 @@ if __name__ == '__main__':
     rospy.init_node("nav_gui");
     pathfollower = PathFollower();
     target_pose_topic = rospy.get_param("~target_pose","target_pose");
+    path_dir = rospy.get_param("save_load_dir","/home/buggy/catkin_ws/src/buggy_py/txt/")
 
     sys.stdout = PrintQueue(infoQ);
     sys.stderr = PrintQueue(errorQ);
@@ -242,13 +243,13 @@ Report: Prints actionlib goal status, number of waypoints and current target, et
         pass
 
     def save_path():
-        saved_file = tkfile.asksaveasfilename();
+        saved_file = tkfile.asksaveasfilename(initialdir=path_dir);
         textQ.put(" SAVING PATH TO %s"%saved_file);
         pathfollower.pap.write_path_simple(saved_file);
         pass
 
     def load_file():
-        load_file = tkfile.askopenfilename();
+        load_file = tkfile.askopenfilename(initialdir=path_dir);
         textQ.put("Loading from file %s"%load_file);
         res = load_poses_from_file(load_file,pathfollower.pap);
         if not res:

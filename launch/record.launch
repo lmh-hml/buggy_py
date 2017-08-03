@@ -7,5 +7,4 @@
     </include>
 
     <node pkg="buggy_py" type="nav_gui.py" name="nav_gui" required="true"/>
-
 </launch>

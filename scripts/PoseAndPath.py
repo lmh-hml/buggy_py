@@ -101,9 +101,11 @@ class PoseAndPath:
             pathfile.writelines("how_many: "+str( length ) + '\n' );
             pathfile.writelines("src_frame: "+self.src + '\n' );
             pathfile.writelines("\n\n" );
-            pathfile.write("Poses:\n");
+            pathfile.write("Poses: [\n");
             for i in range(length):
                 pose = self.path.poses[i];
-                pathfile.write('  -\n');
-                pathfile.write("    position: [%f,%f,%f]\n"%(pose.pose.position.x,pose.pose.position.y,pose.pose.position.z) );
+                pathfile.write('{\n');
+                pathfile.write("    position: [%f,%f,%f],\n"%(pose.pose.position.x,pose.pose.position.y,pose.pose.position.z) );
                 pathfile.write("    orientation: [%f,%f,%f,%f]\n"%(pose.pose.orientation.x,pose.pose.orientation.y,pose.pose.orientation.z,pose.pose.orientation.w) );
+                pathfile.write("},\n");
+            pathfile.write("\n]");
