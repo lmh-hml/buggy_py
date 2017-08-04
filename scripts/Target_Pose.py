@@ -13,9 +13,10 @@ class TargetPoser:
 
     def __init__(self,server_name):
         self.movebase = actionlib.SimpleActionClient(server_name,MoveBaseAction);
-        self.poseStamped = PoseStamped();
         self.state   = GoalState(num=-1 ,msg="");
         self.connected = self.wait_for_server();
+
+        self.poseStamped = PoseStamped(); #for callbacks since you cant pass arguments to callback
 
     def wait_for_server(self):
         print "Wait for server..."

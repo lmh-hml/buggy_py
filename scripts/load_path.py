@@ -13,16 +13,14 @@ def load_poses_from_file(filename, poseAndPath):
     """Loads poses from a file into a PoseAndPath object.
     When loaded by rosparam.load,the output variable 'loaded' should be arranged as so:
     [ (  { 'date':'...' , 'src_frame': '...', 'Poses' : [...] , 'how_many': ... }  ) ]
-
     """
     try:
         loaded = rosparam.load_file(filename);
-        print loaded
         print loaded[0][0].keys()
         poses = loaded[0][0]["Poses"];
         num_poses = len(poses)
         if num_poses == 0:
-            print "POSES HAVE NO POSE IN IT"
+            print "PATH LENGTH IS 0"
             return False
         else:
             print "Loading %d poses..."%num_poses
@@ -42,7 +40,7 @@ if __name__ == '__main__':
 
     rospy.init_node("load_path");
     file_dir = rospy.get_param("file_dir","/home/buggy/catkin_ws/src/buggy_py/txt/");
-    filename = rospy.get_param("~file", "waypoint_path2.txt");
+    filename = rospy.get_param("~file", "example.txt");
     pap = PoseAndPath("record","map","base_link");
     header = Header();
     header.frame_id = pap.src;

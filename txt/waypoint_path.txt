@@ -1,9 +1,0 @@
-date: Mon Jul 31 12:47:27 2017
-pose_no: 0
-path : header: 
-  seq: 0
-  stamp: 
-    secs: 0
-    nsecs:         0
-  frame_id: map
-poses: []

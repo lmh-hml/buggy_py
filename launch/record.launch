@@ -1,6 +1,5 @@
 <launch>
     <arg name="run_rviz" value="true"/>
-
     <node pkg="map_server" type="map_server" name="map_server" args="$(find buggy_core)/maps/blank.yaml"/>
     <include file="$(find buggy_description)/launch/model.launch">
       <arg name="use_rviz" value="$(arg run_rviz)"/>

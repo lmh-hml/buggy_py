@@ -1,8 +1,0 @@
-date: Thu Aug  3 10:25:12 2017
-how_many: 0
-src_frame: map
-
-
-Poses: [
-
-]
