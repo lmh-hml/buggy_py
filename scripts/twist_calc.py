@@ -2,9 +2,13 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
+from tf.transformations import euler_from_quaternion,quaternion_from_euler
+from util import PI,degToRad,radToDeg
 import math
 
 #TODO: Implement angular velocity calculation too! Need to read up on rotational quaternions...
+def QuatToList( quat):
+    return [ quat.w,quat.x,quat.y,quat.z ]
 
 class Twist_calc():
 
@@ -26,6 +30,13 @@ class Twist_calc():
         offsetY = self.current_pose.pose.position.y - self.last_pose.pose.position.y;
         offset = math.sqrt( math.pow(offsetX,2) + math.pow(offsetY,2));
         time_diff = (self.current_pose.header.stamp - self.last_pose.header.stamp).to_sec();
+
+        last_rads = euler_from_quaternion(QuatToList(self.last_pose.pose.orientation));
+        current_rads = euler_from_quaternion(QuatToList(self.current_pose.pose.orientation));
+
+        dRad = current_rads[0]-last_rads[0];
+        print radToDeg(dRad);
+
         vel = 0.0;
         if time_diff == 0:
             return;

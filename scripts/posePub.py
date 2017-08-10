@@ -2,6 +2,9 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
+from joy_pose import rotateQuat,degToRad,PI
+
+
 
 if __name__ == '__main__':
 
@@ -23,4 +26,5 @@ if __name__ == '__main__':
 
         x +=1;
         y +=1;
+        rotateQuat(ppose.pose,degToRad(45));
         rospy.Rate(1.0).sleep();

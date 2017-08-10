@@ -8,22 +8,13 @@ from std_msgs.msg import Header
 import tf
 import time
 import exceptions
+from util import fillPose
 
-#helper function used to fill a given poseStamped obj with pos(x,y,z), orient(quaternion), and a header
-def fillPose( poseStamped, pos, orient, header ):
-    poseStamped.header = header;
-    poseStamped.pose.position.x = pos[0];
-    poseStamped.pose.position.y = pos[1];
-    poseStamped.pose.position.z = pos[2];
-    poseStamped.pose.orientation.w = orient[3];
-    poseStamped.pose.orientation.x = orient[0];
-    poseStamped.pose.orientation.y = orient[1];
-    poseStamped.pose.orientation.z = orient[2];
+#A class used to subscribe to a posestamped topic and collect received poses into a path and pose array .
 
 class EmptyPoseAndPathError(Exception):
     def __init__(self, name=""):
         self.message = name+": member Path and Pose_array are both empty!!"
-
 
 class PoseAndPath:
 
@@ -44,9 +35,10 @@ class PoseAndPath:
 
     def poseCB(self,posestamped):
         self.pose = posestamped;
-        self.update_path_array();
+        self.append_path_array(self.pose);
         self.publish();
 
+    #lookup a pose with a tflistener, and then fills in member pose with the result
     def lookup_pose(self, tfListener, seq, now):
         pos , orient = tfListener.lookupTransform(self.src,self.dest,rospy.Time(0));
         self.pose = PoseStamped();
@@ -56,17 +48,12 @@ class PoseAndPath:
         self.header.seq   = seq;
         fillPose(self.pose, pos,orient,self.header);
 
-        #updates lists with the new pose
-    def update_path_array(self):
-        self.pose_array.poses.append(self.pose.pose);
-        self.path.poses.append(self.pose);
-
     def append_path_array(self,pose):
         self.pose_array.poses.append(pose.pose);
         self.path.poses.append(pose);
 
+    #publishes member path and pose array. useful for visualization
     def publish(self):
-        self.pose_pub.publish(self.pose);
         self.path_pub.publish(self.path);
         self.poseArray_pub.publish(self.pose_array);
 
@@ -87,6 +74,7 @@ class PoseAndPath:
     def getSize(self):
         return min( len(self.path.poses),len(self.pose_array.poses) );
 
+    #writes a path's yaml representation to a file
     def write_path_to_file(self, filepath):
         pathFile  = open(filepath,'w');
         pathFile.writelines( "date: " + time.ctime() +'\n');
@@ -94,12 +82,14 @@ class PoseAndPath:
         pathFile.writelines("path : "+str(self.path));
         pathFile.close();
 
-    def write_path_simple(self,filepath):
+    #writes a condesed version of the path to a file.
+    def write_path_simple(self,filepath, map=""):
         with open(filepath,'w') as pathfile:
             pathfile.writelines( "date: " + time.ctime() +'\n');
             length = len(self.path.poses);
             pathfile.writelines("how_many: "+str( length ) + '\n' );
             pathfile.writelines("src_frame: "+self.src + '\n' );
+            pathfile.writelines("map: "+map+'\n');
             pathfile.writelines("\n\n" );
             pathfile.write("Poses: [\n");
             for i in range(length):

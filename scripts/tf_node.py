@@ -10,8 +10,6 @@ from PoseAndPath import PoseAndPath;
 from PoseAndPath import fillPose;
 
 
-
-
 if __name__ == '__main__':
 
     rospy.init_node("tf_node_py");

@@ -12,7 +12,7 @@ import types
 def load_poses_from_file(filename, poseAndPath):
     """Loads poses from a file into a PoseAndPath object.
     When loaded by rosparam.load,the output variable 'loaded' should be arranged as so:
-    [ (  { 'date':'...' , 'src_frame': '...', 'Poses' : [...] , 'how_many': ... }  ) ]
+    [ (  { 'date':'...' , 'src_frame': '...', 'Poses' : [...] , 'how_many': ... } , 'map':... ) ]
     """
     try:
         loaded = rosparam.load_file(filename);
@@ -36,6 +36,7 @@ def load_poses_from_file(filename, poseAndPath):
         return False
 
 
+#RUN THIS BY ITSELF TO LOAD A PATH WITHOUT GUI
 if __name__ == '__main__':
 
     rospy.init_node("load_path");
@@ -52,3 +53,6 @@ if __name__ == '__main__':
         print "Publishing loaded path..."
         while not rospy.is_shutdown() :
             pap.publish();
+    else:
+        print "Failed to load path!"
+    exit();

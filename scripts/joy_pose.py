@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+## A NODE THAT ALLOWS A POSESTAMPED ARROW TO BE CONTROLLED WITH A JOYSTICK.
+#USED FOR TESTING QUARTERNIONS, NOT NEEDED FOR BUGGY
 
 import rospy
 from geometry_msgs.msg import PoseStamped,Twist,Quaternion
@@ -16,6 +18,12 @@ PI = 3.14159265
 ONEEIGHTYOVERPI = 180/PI;
 PIOVERONEEIGHT = PI/180;
 MAG = 1.0
+
+def degToRad(deg):
+    return deg*PIOVERONEEIGHT
+
+def radToDeg(rad):
+    return rad*ONEEIGHTYOVERPI;
 
 class JoyPose(PoseStamped):
 
@@ -80,20 +88,6 @@ def joy_cb(joy):
     jY = joy.axes[1]
     jQ = -(PI/10.0)*joy.axes[3]
 
-    q = QuatToList(pose.pose.orientation);
-    e = trf.euler_from_quaternion(q);
-    quat  = trf.quaternion_from_euler(ak=0,aj=0,ai= e[0]+jQ )
-
-    vx = cos(e[0]);
-    vy = sin(e[0]);
-    pose.pose.position.x -= vx*jY
-    pose.pose.position.y += vy*jY
-    poseQuat(pose.pose,quat)
-
-    #print "%f,%f"%(vx,vy)
-    #print e
-    #print pose
-
 if __name__ == '__main__':
     rospy.init_node("Joy_pose");
     pose.header.frame_id = "map"
@@ -112,6 +106,19 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         gui.update()
         now = rospy.Time.now()
+        jp.header.stamp = now;
         elp = now - last;
         elp = elp.to_sec()
+        if elp >= 0.017:
+            q = QuatToList(pose.pose.orientation);
+            e = trf.euler_from_quaternion(q);
+            quat  = trf.quaternion_from_euler(ak=0,aj=0,ai= e[0]+jQ )
+
+            vx = cos(e[0]);
+            vy = sin(e[0]);
+            pose.pose.position.x -= vx*jY
+            pose.pose.position.y += vy*jY
+            poseQuat(pose.pose,quat)
+            elp = 0;
+            last = now;
         pub.publish(jp)

@@ -1,9 +1,13 @@
 <launch>
+    <arg name="map" default="test"/>
     <arg name="run_rviz" value="true"/>
-    <node pkg="map_server" type="map_server" name="map_server" args="$(find buggy_core)/maps/blank.yaml"/>
+
+    <node pkg="map_server" type="map_server" name="map_server" args="$(find buggy_core)/maps/$(arg map).yaml"/>
     <include file="$(find buggy_description)/launch/model.launch">
       <arg name="use_rviz" value="$(arg run_rviz)"/>
     </include>
 
-    <node pkg="buggy_py" type="nav_gui.py" name="nav_gui" required="true"/>
+    <include file="$(find buggy_py)/launch/nav_gui.launch">
+    </include>
+    <param name="map_name" type="str" value="$(arg map)" />
 </launch>

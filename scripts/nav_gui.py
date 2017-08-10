@@ -45,10 +45,15 @@ class PathFollower:
         self.begin =0;
         self.step = 1
         self.topic_name = "";
+        self.begin_end = [PoseStamped(),PoseStamped()];
+
+    def poseCB(self,poseStamped):
+        self.pap.poseCB(poseStamped);
+        self.update_begin_pose();
 
     def record_path(self,target_pose_topic):
         rospy.loginfo( "Subscribing to '%s'"%( target_pose_topic ) );
-        self.sub = rospy.Subscriber(target_pose_topic,PoseStamped,pathfollower.pap.poseCB);
+        self.sub = rospy.Subscriber(target_pose_topic,PoseStamped,self.poseCB);
         self.topic_name = target_pose_topic;
 
     def stop_recording(self):
@@ -62,6 +67,9 @@ class PathFollower:
 
     def update_state(self):
         self.state = self.tp.getState();
+
+    def update_begin_pose(self):
+        self.begin_end[0] = self.pap.getPoseStamped(self.begin);
 
     def report_state(self):
         """returns current actionlib client state as a string that indicates state id and msg, if any."""
@@ -108,6 +116,9 @@ class PathFollower:
                 self.error(e.message);
 
     def clearPath(self):
+        self.begin = 0;
+        self.target = 0;
+        self.step = 1;
         if self.pap.getSize() > 0:
             del self.pap.path.poses[:];
             del self.pap.pose_array.poses[:];
@@ -164,27 +175,19 @@ if __name__ == '__main__':
     rospy.init_node("nav_gui");
     pathfollower = PathFollower();
     target_pose_topic = rospy.get_param("~target_pose","target_pose");
-    path_dir = rospy.get_param("save_load_dir","/home/buggy/catkin_ws/src/buggy_py/txt/")
+    visualize = rospy.get_param("~visual",True);
+    path_dir = rospy.get_param("~save_load_dir","/home/buggy/catkin_ws/src/buggy_py/txt/")
+    map_name = rospy.get_param("map_name","");
 
+    #Override print and logs to the designated queues. Terminal will not show anything from this node beyond this point.
+    #COMMENT THESE TWO OUT WHEN DEBUGGING CRASHES OR ERRORS TO SHOW OUTPUT IN TERMINAL
     sys.stdout = PrintQueue(infoQ);
     sys.stderr = PrintQueue(errorQ);
 
+    begin_pub = rospy.Publisher("Begin_pose",PoseStamped,queue_size=100);
+
     app.addText("State",70,20);
     app.setOutput("State")
-
-    intro = """
-INSTRUCTIONS:
-Record: Gui subsribes to topic to record waypoints for path
-Stop Rec  : Stop recording.
-Navigate: begin auto-navigation
-Cancel: cancel current goal
-Skip:   cancel current goal and increase target by 1
-Cancel all: cancel all goals and reset target to 0
-Pop: removes latest waypoints
-Clear: removes all waypoints
-Report: Prints actionlib goal status, number of waypoints and current target, etc.
-    """
-    textQ.put(intro);
 
     def rec():
         textQ.put("RECORDING")
@@ -260,7 +263,7 @@ Report: Prints actionlib goal status, number of waypoints and current target, et
         if saved_file == "":
             return
         textQ.put(" SAVING PATH TO %s"%saved_file);
-        pathfollower.pap.write_path_simple(saved_file);
+        pathfollower.pap.write_path_simple(saved_file,map=map_name);
         pass
 
     def load_file():
@@ -268,11 +271,11 @@ Report: Prints actionlib goal status, number of waypoints and current target, et
         if load_file == "":
             return
         textQ.put("Loading from file %s"%load_file);
-        res = load_poses_from_file(load_file,pathfollower.pap);
+        success = load_poses_from_file(load_file,pathfollower.pap);
         pathfollower.begin = 0;
         pathfollower.target = 0;
         pathfollower.step = 1;
-        if not res:
+        if not success:
             textQ.put("UNABLE TO LOAD FILE")
         pass
 
@@ -289,6 +292,7 @@ Report: Prints actionlib goal status, number of waypoints and current target, et
             pathfollower.begin= pathfollower.report_path_size()-1;
         else:
             pathfollower.begin = 0;
+        pathfollower.update_begin_pose();
 
     states = [ ("Record",rec) , ("Stop Rec", stop),
     ("Navigate",nav),("Skip",skip),("Cancel",cancel),("Cancel All",reset),
@@ -305,8 +309,9 @@ Report: Prints actionlib goal status, number of waypoints and current target, et
         if app.running:
             app.update();
 
-            if pathfollower.mode == NavMode.RECORDING:
+            if pathfollower.mode == NavMode.RECORDING and visualize == True:
                 pathfollower.pap.publish();
+                begin_pub.publish( pathfollower.begin_end[0]);
 
             #print logs from queues onto gui textboxes
             app.logFromQueue(textQ,output="State",mode =GUI.LogMode.WARN);

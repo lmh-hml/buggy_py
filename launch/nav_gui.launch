@@ -1,0 +1,23 @@
+<launch>
+
+    <arg name="target_pose_topic" default="target_pose"/>
+    <arg name="visual" default = "True"/>
+    <arg name="save_load_dir" default="/home/buggy/catkin_ws/src/buggy_py/txt/"/>
+    <arg name="important" dafault="True"/>
+
+    <node pkg="buggy_py" type="nav_gui.py" name="nav_gui">
+        <param name="target_pose" value="$(arg target_pose_topic)" />
+        <param name="visual"      value="$(arg visual)"/>
+        <param name="save_load_dir" value="$(arg save_load_dir)"/>
+    </node>
+
+</launch>
+
+<!--Copy below into another file to include this launch file. Chage args accordingly
+
+    <include file="$(find buggy_py)/launch/nav_gui.py">
+        <arg name="target_pose" value="..." />
+        <arg name="visual"      value="..."/>
+        <arg name="save_load_dir" value="..."/>
+    </include>
+-->
