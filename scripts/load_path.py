@@ -25,8 +25,10 @@ def load_poses_from_file(filename, poseAndPath):
         else:
             print "Loading %d poses..."%num_poses
         for i in range(num_poses):
+            frame = loaded[0][0]["src_frame"];
             pose = PoseStamped();
             header = Header();
+            header.frame_id = frame;
             fillPose(pose, poses[i]["position"], poses[i]["orientation"], header);
             poseAndPath.append_path_array(pose);
         return True

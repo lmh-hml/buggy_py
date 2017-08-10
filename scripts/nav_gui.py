@@ -101,7 +101,7 @@ class PathFollower:
 
         except Exception as e:
             print e.message;
-        textQ.put("THREAD EXITS");
+        textQ.put("THREAD EXITS WITH STATUS: %d"%self.state.num);
 
     def follow_path(self):
         size = self.report_path_size();

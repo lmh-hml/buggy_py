@@ -8,12 +8,25 @@ import tf
 import time
 from PoseAndPath import PoseAndPath;
 from PoseAndPath import fillPose;
+from std_msgs.msg import Bool
 
+class flag:
+    def __init__(self,bool_val):
+        self.val = bool_val
 
 if __name__ == '__main__':
 
     rospy.init_node("tf_node_py");
+    auto_record= rospy.get_param("~autoRecord",True);
     tfListener = tf.TransformListener();
+    should_record = flag(auto_record);
+
+    def boolCB(b):
+        should_record.val = b.data;
+        print should_record.val
+
+
+    bool_sub = rospy.Subscriber("should_record", Bool,callback=boolCB, queue_size=100);
 
     otb = PoseAndPath("otb","odom","base_link");
     mto = PoseAndPath("mto","map","odom");
@@ -45,14 +58,21 @@ if __name__ == '__main__':
             mto.pose_pub.publish(mto_pose);
 
             mtb.lookup_pose(tfListener,seq,now);
-            mtb.update_path_array();
-            mtb.publish();
-
             otb.lookup_pose(tfListener,seq,now);
-            otb.update_path_array();
+
+            if not should_record.val :
+                print "Rec:"+str(should_record.val)
+                continue
+            rospy.loginfo("Recording");
+            mtb.append_path_array(mtb.pose);
+            mtb.publish();
+            otb.append_path_array(pose=otb.pose);
             otb.publish();
 
+
             length  = len(mtb.path.poses);
+            if length <= 0:
+                continue
             last = str(mtb.path.poses[length-1]);
             rospy.loginfo( "path: {0},{1}".format( length , last ) );
             seq+=1;
