@@ -10,6 +10,7 @@ from PoseAndPath import PoseAndPath;
 from PoseAndPath import fillPose;
 from std_msgs.msg import Bool
 
+
 class flag:
     def __init__(self,bool_val):
         self.val = bool_val

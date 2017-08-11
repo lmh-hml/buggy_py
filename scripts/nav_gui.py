@@ -29,10 +29,9 @@ def rotateQuat( pose, angle, which="roll"):
     pose.orientation.y = newQuat[2]
     pose.orientation.z = newQuat[3]
 
-class NavMode(Enum):
-    IDLE=0
-    RECORDING=1
-    NAVIGATING=2
+IDLE=0
+RECORDING=1
+NAVIGATING=2
 
 class PathFollower:
 
@@ -40,7 +39,7 @@ class PathFollower:
         self.tp = TargetPoser("move_base");
         self.pap = PoseAndPath("waypoint","map","base_link");
         self.state = GoalState(num=-1,msg="");
-        self.mode = NavMode.IDLE;
+        self.mode = IDLE;
         self.target = 0;
         self.begin =0;
         self.step = 1
@@ -139,21 +138,21 @@ class PathFollower:
 
 def setMode(gui, pathfollower, mode):
     pathfollower.mode = mode;
-    if mode == NavMode.IDLE:
+    if mode == IDLE:
         for button in gui.buttons:
             gui.buttons[button].config(state="normal");
         gui.buttons["Skip"].config(state="disabled");
         gui.buttons["Cancel"].config(state="disabled");
         gui.buttons["Cancel All"].config(state="disabled");
 
-    elif mode == NavMode.RECORDING:
+    elif mode == RECORDING:
         gui.buttons["Navigate"].config( state="disabled" );
         gui.buttons["Record"].config(state="disabled");
         gui.buttons["Cancel"].config(state="disabled");
         gui.buttons["Cancel All"].config(state="disabled");
         gui.buttons["Skip"].config(state="disabled");
 
-    elif mode == NavMode.NAVIGATING:
+    elif mode == NAVIGATING:
         gui.buttons["Navigate"].config(state="disabled");
         gui.buttons["Record"].config(state="disabled");
         gui.buttons["Stop Rec"].config(state="disabled");
@@ -191,32 +190,32 @@ if __name__ == '__main__':
 
     def rec():
         textQ.put("RECORDING")
-        setMode(app, pathfollower,NavMode.RECORDING);
-        pathfollower.mode = NavMode.RECORDING;
+        setMode(app, pathfollower,RECORDING);
+        pathfollower.mode = RECORDING;
         pathfollower.record_path(target_pose_topic);
         pass;
 
     def stop():
         textQ.put("STOP")
-        setMode(app,pathfollower,NavMode.IDLE);
-        pathfollower.mode = NavMode.IDLE;
+        setMode(app,pathfollower,IDLE);
+        pathfollower.mode = IDLE;
         pathfollower.stop_recording();
         pass
 
     def cancel():
         textQ.put("CANCEL CURRENT GOAL")
-        setMode(app,pathfollower,NavMode.IDLE);
+        setMode(app,pathfollower,IDLE);
         pathfollower.tp.cancel_goal();
         pass
 
     def skip():           #cancel current goal, but forward current goal by one
         textQ.put("SKIP CURRENT GOAL")
-        setMode(app,pathfollower,NavMode.IDLE);
+        setMode(app,pathfollower,IDLE);
         pass;
 
     def nav():
         textQ.put("NAVIGATING")
-        setMode(app,pathfollower,NavMode.NAVIGATING);
+        setMode(app,pathfollower,NAVIGATING);
         try:
             pathfollower.follow_path();
         except EmptyPoseAndPathError as e:
@@ -225,7 +224,7 @@ if __name__ == '__main__':
 
     def reset():
         textQ.put("RESET")
-        setMode(app,pathfollower,NavMode.IDLE);
+        setMode(app,pathfollower,IDLE);
         pathfollower.tp.cancel_goal(all_goals=True);
         self.target = 0;
         pass
@@ -309,7 +308,7 @@ if __name__ == '__main__':
         if app.running:
             app.update();
 
-            if pathfollower.mode == NavMode.RECORDING and visualize == True:
+            if pathfollower.mode == RECORDING and visualize == True:
                 pathfollower.pap.publish();
                 begin_pub.publish( pathfollower.begin_end[0]);
 
